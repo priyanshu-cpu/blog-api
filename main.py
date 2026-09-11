@@ -13,6 +13,14 @@ app = FastAPI()
 def home():
     return {"message" : "Home"}
 
-@app.post("/create", response_model=schemas.BlogOut)
-def create_blog(db: Session= Depends(get_db)):
-    pass
+@app.post("/create")
+def create_blog(blog_data: schemas.BlogBase, db: Session = Depends(get_db)):
+    data = models.BlogData(
+        author=blog_data.author,
+        title=blog_data.title,
+        content=blog_data.content
+    )
+    db.add(data)
+    db.commit()
+    db.refresh(data)
+    return data
