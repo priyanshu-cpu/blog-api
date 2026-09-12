@@ -36,6 +36,25 @@ def get_blogs(db: Session = Depends(get_db)):
 def get_blog(blog_id: int, db: Session = Depends(get_db)):
     blog = db.query(models.BlogData).filter(models.BlogData.id == blog_id).first()
     if blog is None:
-        raise HTTPException(status_code=401, detail="Blog not found!")
+        raise HTTPException(status_code=404, detail="Blog not found!")
 
     return blog
+
+
+@app.put("/update-blog/{blog_id}")
+def update_blog(blog_id: int, blog_data: schemas.BlogBase, db: Session = Depends(get_db)):
+    blog = db.query(models.BlogData).filter(models.BlogData.id == blog_id).first()
+    if blog is None:
+        raise HTTPException(status_code=404,detail="Blog not found!")
+    print(blog.id, blog.title, blog.author, blog.content)
+    blog.author = blog_data.author
+    blog.title = blog_data.title
+    blog.content = blog_data.content
+
+    db.commit()
+    db.refresh(blog)
+
+    return{
+        "message" : "blog updated",
+        "blog" : blog
+    }
