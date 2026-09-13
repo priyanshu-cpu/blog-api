@@ -58,3 +58,15 @@ def update_blog(blog_id: int, blog_data: schemas.BlogBase, db: Session = Depends
         "message" : "blog updated",
         "blog" : blog
     }
+
+@app.delete("/blogs/{blog_id}")
+def delete_blog(blog_id: int, db :  Session = Depends(get_db)):
+    blog = db.query(models.BlogData).filter(models.BlogData.id == blog_id).first()
+    if blog is None:
+        raise HTTPException(status_code=404, detail="Blog not found!")
+
+    db.delete(blog)
+    db.commit()
+    return{
+        "message" : "Blog deleted!"
+    }
