@@ -11,3 +11,12 @@ class BlogData(Base):
     title = Column(String)
     content = Column(String)
     date_published = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class Users(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, index=True, unique=True)
+    email = Column(String, unique=True)
+    hashed_password = Column(String)

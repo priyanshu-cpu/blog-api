@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import Base, engine, get_db
 import models
 import schemas
+from jose import jwt
 
 Base.metadata.create_all(engine)
 
