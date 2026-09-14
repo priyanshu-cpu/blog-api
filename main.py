@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from database import Base, engine, get_db
 import models
@@ -6,6 +6,12 @@ import schemas
 from jose import jwt
 from helper import create_token
 from pwdlib import PasswordHash
+import os 
+from dotenv import load_dotenv
+from datetime import datetime, timezone
+import time
+
+load_dotenv()
 
 Base.metadata.create_all(engine)
 
@@ -120,3 +126,20 @@ def login_user(body: schemas.userLoginSchema, db: Session = Depends(get_db)):
         "sub" : body.username
     })
     return token
+
+def verify_token(token: str = Header(None)):
+    try:
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
+        return payload
+    except:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token!")
+
+# @app.get("/secure")
+# def secure_route(user = Depends(verify_token), db: Session = Depends(get_db)):
+#     user = db.query(models.Users).filter(models.Users.username == user["sub"]).first()
+#     if user is None:
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+#     return{
+#         "message" : "secure root accessed",
+#         "user" : user.username,
+#     }
