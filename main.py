@@ -57,13 +57,13 @@ def create_blog(blog_data: schemas.BlogBase, db: Session = Depends(get_db), payl
 
 
 @app.get("/blogs", response_model=list[schemas.BlogOut])
-def get_blogs(db: Session = Depends(get_db)):
+def get_blogs(db: Session = Depends(get_db), payload = Depends(verify_token)):
     blogs = db.query(models.BlogData).all()
     return blogs
 
 
 @app.get("/blogs/{blog_id}", response_model=schemas.BlogOut)
-def get_blog(blog_id: int, db: Session = Depends(get_db)):
+def get_blog(blog_id: int, db: Session = Depends(get_db), payload = Depends(verify_token)):
     blog = db.query(models.BlogData).filter(models.BlogData.id == blog_id).first()
     if blog is None:
         raise HTTPException(status_code=404, detail="Blog not found!")
@@ -72,12 +72,18 @@ def get_blog(blog_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/update-blog/{blog_id}")
-def update_blog(blog_id: int, blog_data: schemas.BlogBase, db: Session = Depends(get_db)):
+def update_blog(blog_id: int, blog_data: schemas.BlogBase, db: Session = Depends(get_db), payload = Depends(verify_token)):
     blog = db.query(models.BlogData).filter(models.BlogData.id == blog_id).first()
     if blog is None:
         raise HTTPException(status_code=404,detail="Blog not found!")
-    print(blog.id, blog.title, blog.author, blog.content)
-    blog.author = blog_data.author
+
+    current_user = db.query(models.Users).filter(models.Users.username == payload["sub"]).first()
+    if current_user is None:
+        raise HTTPException(status_code=404, detail="User not found!")
+    
+    if blog.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only update your own blogs")
+    
     blog.title = blog_data.title
     blog.content = blog_data.content
 
@@ -95,9 +101,13 @@ def delete_blog(blog_id: int, db :  Session = Depends(get_db), payload = Depends
     if blog is None:
         raise HTTPException(status_code=404, detail="Blog not found!")
 
-    if blog.author != payload["sub"]:
-        raise HTTPException(status_code=403,detail="You can only delete your own blogs")
-
+    current_user = db.query(models.Users).filter(models.Users.username == payload["sub"]).first()
+    if current_user is None:
+        raise HTTPException(status_code=404, detail="User not found!")
+    
+    if blog.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own blogs")
+    
     db.delete(blog)
     db.commit()
     return{
@@ -144,19 +154,19 @@ def login_user(body: schemas.userLoginSchema, db: Session = Depends(get_db)):
     return token
 
 
-def is_authenticated(token: str = Header(None)):
-    if token is None:
-        return False
-    try:
-        jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
-        return True
-    except:
-        return False
+# def is_authenticated(token: str = Header(None)):
+#     if token is None:
+#         return False
+#     try:
+#         jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
+#         return True
+#     except:
+#         return False
 
-@app.get("/secure")
-def secure_route(authenticated:bool = Depends(is_authenticated)):
-    if not authenticated:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    return{
-        "message" : "secure root accessed"
-    }
+# @app.get("/secure")
+# def secure_route(authenticated:bool = Depends(is_authenticated)):
+#     if not authenticated:
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+#     return{
+#         "message" : "secure root accessed"
+#     }

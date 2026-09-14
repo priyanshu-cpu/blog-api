@@ -15,14 +15,14 @@ class BlogData(Base):
 
     user_id = Column(Integer, ForeignKey("Users.id"))
 
-    owner = relationship("Users", back_populates=True)
+    owner = relationship("Users", back_populates="blogs")
 
 class Users(Base):
-    __tablename__ = "users"
+    __tablename__ = "Users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, index=True, unique=True)
     email = Column(String, unique=True, nullable=True)
     hashed_password = Column(String)
 
-    blogs = relationship("BlogData", back_populates=True)
+    blogs = relationship("BlogData", back_populates="owner")
