@@ -5,10 +5,19 @@ import models
 import schemas
 from jose import jwt
 from helper import create_token
+from pwdlib import PasswordHash
 
 Base.metadata.create_all(engine)
 
 app = FastAPI()
+
+password_hash = PasswordHash.recommended()
+
+def get_password_hash(password):
+    return password_hash.hash(password)
+
+def verify_password(plain_pass, hash_pass):
+    return password_hash.verify(plain_pass, hash_pass)
 
 
 @app.get("/")
@@ -76,12 +85,19 @@ def delete_blog(blog_id: int, db :  Session = Depends(get_db)):
 @app.post("/register")
 def register_user(user_data : schemas.UserIn, db : Session = Depends(get_db)):
     user = db.query(models.Users).filter(models.Users.username==user_data.username).first()
-    if user is None:
+    if user is not None:
         raise HTTPException(status_code=status.HTTP_208_ALREADY_REPORTED, detail="user already exists.")
 
-
+    hash_pass = get_password_hash(user_data.password)
 
     new_user = models.Users(username = user_data.username,
                             email = user_data.email,
-                            hashed_password = user_data.password
+                            hashed_password = hash_pass
                             )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return{
+        "message" : "user added successfully"
+    }
