@@ -86,7 +86,12 @@ def delete_blog(blog_id: int, db :  Session = Depends(get_db)):
 def register_user(user_data : schemas.UserIn, db : Session = Depends(get_db)):
     user = db.query(models.Users).filter(models.Users.username==user_data.username).first()
     if user is not None:
-        raise HTTPException(status_code=status.HTTP_208_ALREADY_REPORTED, detail="user already exists.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user already exists!")
+
+    user_email = db.query(models.Users).filter(models.Users.email==user_data.email).first()
+
+    if user_email is not None:
+        raise HTTPException(status_code=400, detail="Email already exists!")
 
     hash_pass = get_password_hash(user_data.password)
 
@@ -101,3 +106,5 @@ def register_user(user_data : schemas.UserIn, db : Session = Depends(get_db)):
     return{
         "message" : "user added successfully"
     }
+
+# @app.post("/login")
