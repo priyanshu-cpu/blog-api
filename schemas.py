@@ -4,7 +4,6 @@ from typing import Optional
 
 
 class BlogBase(BaseModel):
-    author: str
     title: str
     content: str
 

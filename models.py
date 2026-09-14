@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime, timezone
 
@@ -12,6 +13,9 @@ class BlogData(Base):
     content = Column(String)
     date_published = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+    user_id = Column(Integer, ForeignKey("Users.id"))
+
+    owner = relationship("Users", back_populates=True)
 
 class Users(Base):
     __tablename__ = "users"
@@ -20,3 +24,5 @@ class Users(Base):
     username = Column(String, index=True, unique=True)
     email = Column(String, unique=True, nullable=True)
     hashed_password = Column(String)
+
+    blogs = relationship("BlogData", back_populates=True)

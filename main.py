@@ -26,16 +26,29 @@ def verify_password(plain_pass, hash_pass):
     return password_hash.verify(plain_pass, hash_pass)
 
 
+def verify_token(token: str = Header(None)):
+    try:
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
+        return payload
+    except:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token!")
+
+
 @app.get("/")
 def home():
     return {"message" : "Home"}
 
 @app.post("/create-blog")
-def create_blog(blog_data: schemas.BlogBase, db: Session = Depends(get_db)):
+def create_blog(blog_data: schemas.BlogBase, db: Session = Depends(get_db), payload = Depends(verify_token)):
+    currrent_user = db.query(models.Users).filter(models.Users.username == payload["sub"]).first()
+    if currrent_user is None:
+        raise HTTPException(status_code=404, detail="user not found!")
+    
     data = models.BlogData(
-        author=blog_data.author,
+        author=currrent_user.username,
         title=blog_data.title,
-        content=blog_data.content
+        content=blog_data.content,
+        user_id = currrent_user.id
     )
     db.add(data)
     db.commit()
@@ -77,10 +90,13 @@ def update_blog(blog_id: int, blog_data: schemas.BlogBase, db: Session = Depends
     }
 
 @app.delete("/blogs/{blog_id}")
-def delete_blog(blog_id: int, db :  Session = Depends(get_db)):
+def delete_blog(blog_id: int, db :  Session = Depends(get_db), payload = Depends(verify_token)):
     blog = db.query(models.BlogData).filter(models.BlogData.id == blog_id).first()
     if blog is None:
         raise HTTPException(status_code=404, detail="Blog not found!")
+
+    if blog.author != payload["sub"]:
+        raise HTTPException(status_code=403,detail="You can only delete your own blogs")
 
     db.delete(blog)
     db.commit()
@@ -126,13 +142,6 @@ def login_user(body: schemas.userLoginSchema, db: Session = Depends(get_db)):
         "sub" : body.username
     })
     return token
-
-def verify_token(token: str = Header(None)):
-    try:
-        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
-        return payload
-    except:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token!")
 
 
 def is_authenticated(token: str = Header(None)):
