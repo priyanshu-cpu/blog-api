@@ -74,7 +74,7 @@ def delete_blog(blog_id: int, db :  Session = Depends(get_db)):
     }
 
 @app.post("/register")
-def register_user(user_data : schemas.UserIn, db = Session = Depends(get_db)):
+def register_user(user_data : schemas.UserIn, db : Session = Depends(get_db)):
     user = db.query(models.Users).filter(models.Users.username==user_data.username).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_208_ALREADY_REPORTED, detail="user already exists.")
