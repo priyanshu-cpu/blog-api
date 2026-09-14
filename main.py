@@ -134,12 +134,20 @@ def verify_token(token: str = Header(None)):
     except:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token!")
 
-# @app.get("/secure")
-# def secure_route(user = Depends(verify_token), db: Session = Depends(get_db)):
-#     user = db.query(models.Users).filter(models.Users.username == user["sub"]).first()
-#     if user is None:
-#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-#     return{
-#         "message" : "secure root accessed",
-#         "user" : user.username,
-#     }
+
+def is_authenticated(token: str = Header(None)):
+    if token is None:
+        return False
+    try:
+        jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
+        return True
+    except:
+        return False
+
+@app.get("/secure")
+def secure_route(authenticated:bool = Depends(is_authenticated)):
+    if not authenticated:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    return{
+        "message" : "secure root accessed"
+    }
