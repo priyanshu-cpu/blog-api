@@ -107,4 +107,16 @@ def register_user(user_data : schemas.UserIn, db : Session = Depends(get_db)):
         "message" : "user added successfully"
     }
 
-# @app.post("/login")
+@app.post("/login")
+def login_user(body: schemas.userLoginSchema, db: Session = Depends(get_db)):
+    user = db.query(models.Users).filter(models.Users.username== body.username).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="username is not correct!")
+
+    if not verify_password(body.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="password is not correct!")
+
+    token = create_token({
+        "sub" : body.username
+    })
+    return token

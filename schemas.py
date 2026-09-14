@@ -37,3 +37,7 @@ class UserOut(BaseModel):
     id: int
     username: str
     email: str
+
+class userLoginSchema(BaseModel):
+    username: str
+    password: str
