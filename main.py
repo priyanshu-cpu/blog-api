@@ -38,7 +38,7 @@ def verify_token(token: str = Header(None)):
 def home():
     return {"message" : "Home"}
 
-@app.post("/create-blog")
+@app.post("/blogs")
 def create_blog(blog_data: schemas.BlogBase, db: Session = Depends(get_db), payload = Depends(verify_token)):
     currrent_user = db.query(models.Users).filter(models.Users.username == payload["sub"]).first()
     if currrent_user is None:
@@ -71,7 +71,7 @@ def get_blog(blog_id: int, db: Session = Depends(get_db), payload = Depends(veri
     return blog
 
 
-@app.put("/update-blog/{blog_id}")
+@app.put("/blogs/{blog_id}")
 def update_blog(blog_id: int, blog_data: schemas.BlogBase, db: Session = Depends(get_db), payload = Depends(verify_token)):
     blog = db.query(models.BlogData).filter(models.BlogData.id == blog_id).first()
     if blog is None:
@@ -114,11 +114,11 @@ def delete_blog(blog_id: int, db :  Session = Depends(get_db), payload = Depends
         "message" : "Blog deleted!"
     }
 
-@app.post("/register")
+@app.post("/register", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 def register_user(user_data : schemas.UserIn, db : Session = Depends(get_db)):
     user = db.query(models.Users).filter(models.Users.username==user_data.username).first()
     if user is not None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user already exists!")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="user already exists!")
 
     user_email = db.query(models.Users).filter(models.Users.email==user_data.email).first()
 
@@ -135,9 +135,7 @@ def register_user(user_data : schemas.UserIn, db : Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    return{
-        "message" : "user added successfully"
-    }
+    return new_user
 
 @app.post("/login")
 def login_user(body: schemas.userLoginSchema, db: Session = Depends(get_db)):
@@ -153,20 +151,3 @@ def login_user(body: schemas.userLoginSchema, db: Session = Depends(get_db)):
     })
     return token
 
-
-# def is_authenticated(token: str = Header(None)):
-#     if token is None:
-#         return False
-#     try:
-#         jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
-#         return True
-#     except:
-#         return False
-
-# @app.get("/secure")
-# def secure_route(authenticated:bool = Depends(is_authenticated)):
-#     if not authenticated:
-#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-#     return{
-#         "message" : "secure root accessed"
-#     }

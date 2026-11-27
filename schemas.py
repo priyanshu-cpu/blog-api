@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_serializer, EmailStr
+from pydantic import BaseModel, Field, field_serializer, EmailStr, ConfigDict
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -7,9 +7,7 @@ class BlogBase(BaseModel):
     title: str
     content: str
 
-    class Config:
-        from_attributes = True
-
+    model_config = ConfigDict(from_attributes=True)
 
 class BlogOut(BaseModel):
     id: int
@@ -22,8 +20,7 @@ class BlogOut(BaseModel):
     def format_date(self, dt: datetime, _info) -> str:
         return dt.strftime("%B %d, %Y at %I:%M %p")
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserIn(BaseModel):
