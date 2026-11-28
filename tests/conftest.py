@@ -21,53 +21,55 @@ from database import Base, get_db
 from main import app
 import models
 
-TestingSessionLocal = sessionmaker(
-    bind=test_engine,
-    autocommit=False,
-    autoflush=False
-)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session", autouse=True)
 def setup_database():
     Base.metadata.create_all(bind=test_engine)
-
     yield
-
     Base.metadata.drop_all(bind=test_engine)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def db_session(setup_database):
+    conn = test_engine.connect()
+    transaction = conn.begin()
 
-    db = TestingSessionLocal()
+
+    TestingSessionLocal = sessionmaker(
+        bind=conn,
+        autoflush=False,
+        autocommit= False,
+        join_transaction_mode= "create_savepoint"
+    )
+
+    session = TestingSessionLocal()
 
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
+        transaction.rollback()
+        conn.close()
 
 
-@pytest.fixture
-def client(setup_database):
+
+@pytest.fixture(scope="function")
+def client(db_session):
 
     def override_getdb():
-        db = TestingSessionLocal()
-
-        try:
-            yield db
-        finally:
-            db.close()
+        yield db_session
 
     app.dependency_overrides[get_db] = override_getdb
 
     try:
         with TestClient(app) as test_client:
             yield test_client
+
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-
+        
 @pytest.fixture
 def user_data():
     return {
