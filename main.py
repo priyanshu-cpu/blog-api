@@ -38,7 +38,7 @@ def verify_token(token: str = Header(None)):
 def home():
     return {"message" : "Home"}
 
-@app.post("/blogs")
+@app.post("/blogs", status_code=status.HTTP_201_CREATED)
 def create_blog(blog_data: schemas.BlogBase, db: Session = Depends(get_db), payload = Depends(verify_token)):
     currrent_user = db.query(models.Users).filter(models.Users.username == payload["sub"]).first()
     if currrent_user is None:

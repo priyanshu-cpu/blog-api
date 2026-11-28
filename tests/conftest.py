@@ -105,10 +105,10 @@ def auth_headers(client, registered_user):
 
     assert response.status_code == 200
 
-    token = response.json()["access_token"]
+    token = response.json()
 
     return {
-        "Authorization": f"Bearer {token}"
+        "token": token
     }
 
 
@@ -126,7 +126,7 @@ def created_post(client, auth_headers, post_data):
     response = client.post(
         "/blogs",
         json=post_data,
-        headers=auth_headers
+        headers=auth_headers,
     )
 
     assert response.status_code == 201
